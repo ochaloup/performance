@@ -36,39 +36,8 @@ PATH=$WORKSPACE/tmp/tools/maven/bin/:$PATH
 
 comment_on_pull "Started testing this pull request: $BUILD_URL"
 
-GIT_BRANCH=master THREAD_COUNTS="1 24 240 1600" COMPARISON="com.arjuna.ats.jta.xa.performance.*StoreBenchmark.*" COMPARISON_COUNT=4 narayana/scripts/hudson/jenkins.sh
-[ $? = 0 ] || fatal "Store benchmark failed"
-mv benchmark-output.txt benchmark-store-output.txt
-mv benchmark.png benchmark-store.png
-
-GIT_BRANCH=master THREAD_COUNTS="1 24 240 1600" COMPARISON="io.narayana.perf.product.*Comparison.*" COMPARISON_COUNT=5 narayana/scripts/hudson/jenkins.sh
-[ $? = 0 ] || fatal "Product comparison benchmark failed"
-mv benchmark-output.txt benchmark-comparison-output.txt
-mv benchmark.png benchmark-comparison.png
-
-JVM_ARGS="-DMAX_ERRORS=10" ./narayana/scripts/hudson/benchmark.sh "ArjunaJTA/jta" "org.jboss.narayana.rts.*TxnTest.*" 2
+JVM_ARGS="-DMAX_ERRORS=10" ./narayana/scripts/hudson/benchmark.sh "ArjunaJTA/jta" "org.jboss.narayana.rts.TxnTest.*" 2
 [ $? = 0 ] || fatal "RTS benchmark failed"
 mv benchmark-output.txt benchmark-rts-output.txt
 mv benchmark.png benchmark-rts.png
 
-./build.sh -f narayana/pom.xml clean package -DskipTests
-wget -q http://narayanaci1.eng.hst.ams2.redhat.com/job/narayana-AS800/lastSuccessfulBuild/artifact/dist/target/*zip*/target.zip
-[ $? = 0 ] || fatal "Could not download zip"
-unzip -q target.zip
-[ $? = 0 ] || fatal "Could not extract zip"
-cd target
-export WILDFLY_DIST_ZIP=$(ls wildfly-*-SNAPSHOT.zip)
-[ $? = 0 ] || fatal "Could not find WFLY"
-unzip -q $WILDFLY_DIST_ZIP
-[ $? = 0 ] || fatal "Could not extract WFLY"
-export WILDFLY_HOME=`pwd`/${WILDFLY_DIST_ZIP%.zip}
-export JBOSS_HOME="${WILDFLY_HOME}"
-[ ! -d "${JBOSS_HOME}" ] && fatal "JBOSS_HOME directory '${JBOSS_HOME}' does not exist"
-cd -
-
-./build.sh -f comparison/pom.xml clean install
-[ $? = 0 ] || fatal "Transport comparison failed"
-./narayana/scripts/hudson/bm.sh
-[ $? = 0 ] || fatal "BM properties failed"
-
-comment_on_pull "Pull passed: $BUILD_URL"
