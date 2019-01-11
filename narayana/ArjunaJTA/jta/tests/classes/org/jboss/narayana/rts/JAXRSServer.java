@@ -17,6 +17,8 @@
 package org.jboss.narayana.rts;
 
 import io.undertow.Undertow;
+import io.undertow.UndertowOptions;
+
 import org.apache.http.HttpHost;
 import org.apache.http.client.HttpClient;
 
@@ -29,6 +31,7 @@ import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
+import org.xnio.Options;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Application;
@@ -40,7 +43,7 @@ public class JAXRSServer {
     public JAXRSServer(int port) {
         System.out.printf("starting undertow%n");
         server = new UndertowJaxrsServer();
-        server.start(Undertow.builder().addHttpListener(port, "localhost"));
+        server.start(Undertow.builder().addHttpListener(port, "localhost").setSocketOption(Options.BACKLOG, 30000).setServerOption(UndertowOptions.MAX_CONCURRENT_REQUESTS_PER_CONNECTION, 100));
 
         server.deploy(new TMApplication(), "/");
         server.deploy(new TransactionAwareResource.ServiceApp(), "eg");
